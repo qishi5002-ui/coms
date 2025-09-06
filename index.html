@@ -1,0 +1,306 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XeinStore - Digital Game Codes</title>
+<style>
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); min-height:100vh; color:#222; }
+  .header { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding:1rem 0; box-shadow:0 2px 20px rgba(0,0,0,0.1); position:sticky; top:0; z-index:100; }
+  .nav { max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; padding:0 2rem; }
+  .logo { font-size:1.6rem; font-weight:700; background:linear-gradient(45deg,#667eea,#764ba2); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .cart-btn { background:#667eea; color:#fff; border:none; padding:.6rem 1rem; border-radius:20px; cursor:pointer; font-weight:600; display:flex; gap:.5rem; align-items:center;}
+  .cart-count { background:#ff4757; color:white; border-radius:50%; padding:.15rem .45rem; font-size:.8rem; }
+  .container { max-width:1200px; margin:1.5rem auto; padding:1rem; }
+  .hero { text-align:center; color:white; margin-bottom:1.5rem; }
+  .hero h1 { font-size:2.4rem; text-shadow:2px 2px 4px rgba(0,0,0,0.25); margin-bottom:.3rem; }
+  .products-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap:1.25rem; }
+  .product-card { background: rgba(255,255,255,0.95); border-radius:12px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.08); transition:transform .18s; }
+  .product-card:hover { transform: translateY(-6px); }
+  .product-image { height:150px; display:flex; align-items:center; justify-content:center; font-size:3rem; color:white; background: linear-gradient(45deg,#667eea,#764ba2); }
+  .product-info { padding:1rem; }
+  .product-title { font-weight:700; color:#2d3748; margin-bottom:.35rem; }
+  .product-platform { color:#667eea; margin-bottom:.6rem; }
+  .duration-selector select { width:100%; padding:.45rem; border-radius:6px; border:1px solid #e6eef8; margin-bottom:.5rem; }
+  .duration-price { color:#667eea; font-weight:700; margin-bottom:.6rem; }
+  .add-to-cart { width:100%; padding:.6rem; border-radius:8px; background:#667eea; color:white; border:none; cursor:pointer; font-weight:700; }
+  /* Recent purchase notifications */
+  .recent-notifications { position: fixed; bottom: 20px; left: 20px; z-index:10000; display:flex; flex-direction: column; gap:.5rem; }
+  .notification { background: rgba(0,0,0,0.75); color:white; padding:.5rem 1rem; border-radius:8px; font-size:.9rem; animation: fadein 0.5s; }
+  @keyframes fadein { from {opacity:0; transform: translateX(-20px);} to {opacity:1; transform: translateX(0);} }
+  @media (max-width:900px) { .products-grid { grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); } }
+</style>
+</head>
+<body>
+<header class="header">
+  <nav class="nav">
+    <div class="logo">🎮 XeinStore</div>
+    <button class="cart-btn" onclick="goToCart()">Cart</button>
+  </nav>
+</header>
+
+<main class="container">
+  <div class="hero">
+    <h1>Digital Game Codes</h1>
+    <p>Instant delivery • USDT (TRC20) • Best prices</p>
+  </div>
+  <div class="products-grid" id="products-grid"></div>
+</main>
+
+<div class="recent-notifications" id="recent-notifications"></div>
+
+<script>
+const products = [
+  { id:1, title:"Xein Pubg Key", platform:"Digital Key", pricing:{ "1_day":5.00, "3_days":8.00, "7_days":12.00, "30_days":23.00 }, icon:"🎯" },
+  { id:2, title:"Xein Delta Force Key", platform:"Digital Key", pricing:{ "1_day":4.00, "3_days":7.00, "7_days":11.00, "30_days":22.00 }, icon:"⚡" }
+];
+let cart = [];
+
+function renderProducts() {
+  const grid = document.getElementById('products-grid');
+  grid.innerHTML='';
+  products.forEach(product=>{
+    let optionsHTML='';
+    for(const [key, price] of Object.entries(product.pricing)){
+      const label = key.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase());
+      optionsHTML+=`<option value="${key}">${label} - $${price}</option>`;
+    }
+    const card=document.createElement('div');
+    card.className='product-card';
+    card.innerHTML=`
+      <div class="product-image">${product.icon}</div>
+      <div class="product-info">
+        <div class="product-title">${product.title}</div>
+        <div class="product-platform">${product.platform}</div>
+        <div class="duration-selector">
+          <select id="duration-${product.id}" onchange="updatePrice(${product.id})">
+            ${optionsHTML}
+          </select>
+          <div class="duration-price" id="price-${product.id}">$${product.pricing["1_day"]} USDT</div>
+        </div>
+        <button class="add-to-cart" onclick="addToCart(${product.id})">Add to Cart</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function updatePrice(productId){
+  const select=document.getElementById(`duration-${productId}`);
+  const priceDisplay=document.getElementById(`price-${productId}`);
+  const product=products.find(p=>p.id===productId);
+  priceDisplay.textContent=`$${product.pricing[select.value]} USDT`;
+}
+
+function addToCart(productId){
+  const product=products.find(p=>p.id===productId);
+  const select=document.getElementById(`duration-${productId}`);
+  const selectedDuration=select.value;
+  const price=product.pricing[selectedDuration];
+  const existing=cart.find(i=>i.id===productId && i.selectedDuration===selectedDuration);
+  if(existing) existing.quantity++;
+  else cart.push({ id:product.id, title:product.title, selectedDuration, durationLabel:select.options[select.selectedIndex].text, price, quantity:1 });
+  alert('Added to cart ✅');
+}
+
+function goToCart(){
+  localStorage.setItem('xein_cart', JSON.stringify(cart));
+  window.location.href='cart.html';
+}
+
+// -------- Recent purchase notifications --------
+const fakeUsernames = ["alice_tg", "bob1234", "charlie.x", "dora21", "eve_queen", "fay.tg", "george99", "hannah_x"];
+const recentNotifications = document.getElementById('recent-notifications');
+
+function showRandomNotification(){
+  const product=products[Math.floor(Math.random()*products.length)];
+  const user=fakeUsernames[Math.floor(Math.random()*fakeUsernames.length)];
+  const censored=user.length>4 ? user[0]+user[1]+"***"+user[user.length-1] : user[0]+"***";
+  const times = ["a few minutes ago","10 minutes ago","30 minutes ago","1 hour ago","2 hours ago"];
+  const time=times[Math.floor(Math.random()*times.length)];
+  const notif=document.createElement('div');
+  notif.className='notification';
+  notif.textContent=`${censored} just bought ${product.title} (${product.durationLabel||"1 Day"}) - ${time}`;
+  recentNotifications.appendChild(notif);
+  setTimeout(()=>{ if(notif.parentNode) notif.parentNode.remove(); }, 15000);
+}
+
+setInterval(showRandomNotification, Math.random()*5000+5000);
+
+document.addEventListener('DOMContentLoaded',()=>{
+  renderProducts();
+});
+</script>
+</body>
+</html>
+<!-- cart.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XeinStore - Checkout</title>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background:#f5f6fa; margin:0; padding:0; }
+  header { background: #667eea; color:white; padding:1rem; text-align:center; font-size:1.5rem; font-weight:700; }
+  .container { max-width:800px; margin:2rem auto; padding:1rem; background:white; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.1);}
+  table { width:100%; border-collapse:collapse; margin-bottom:1rem; }
+  th,td { padding:.75rem; border-bottom:1px solid #eee; text-align:left; }
+  .total { font-weight:800; font-size:1.1rem; text-align:right; margin-bottom:1rem; }
+  .btn { display:inline-block; padding:.6rem 1rem; border-radius:8px; border:none; cursor:pointer; font-weight:700; text-decoration:none; color:white;}
+  .btn-primary { background:#667eea; }
+  .note { background:#fff3cd; color:#856404; padding:.75rem; border-radius:6px; margin-bottom:1rem; }
+  .recent-notifications { position: fixed; bottom: 20px; left: 20px; z-index:10000; display:flex; flex-direction: column; gap:.5rem; }
+  .notification { background: rgba(0,0,0,0.75); color:white; padding:.5rem 1rem; border-radius:8px; font-size:.9rem; animation: fadein 0.5s; }
+  @keyframes fadein { from {opacity:0; transform: translateX(-20px);} to {opacity:1; transform: translateX(0);} }
+</style>
+</head>
+<body>
+<header>XeinStore - Checkout</header>
+<div class="container">
+  <div class="note">NOTE: Please be reminded to screenshot your crypto payment.</div>
+  <table id="cart-table">
+    <thead><tr><th>Product</th><th>Duration</th><th>Price</th><th>Quantity</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div class="total" id="cart-total"></div>
+  <label>Telegram Username:</label>
+  <input type="text" id="telegram-username" placeholder="@yourusername" style="width:100%; padding:.6rem; border-radius:6px; border:1px solid #ccc; margin-bottom:1rem;">
+  <button class="btn btn-primary" id="paid-btn">I Paid</button>
+</div>
+
+<div class="recent-notifications" id="recent-notifications"></div>
+
+<script>
+let cart = JSON.parse(localStorage.getItem('xein_cart')||'[]');
+
+function renderCart(){
+  const tbody=document.querySelector('#cart-table tbody');
+  tbody.innerHTML='';
+  let total=0;
+  cart.forEach(item=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${item.title}</td><td>${item.durationLabel}</td><td>$${item.price}</td><td>${item.quantity}</td>`;
+    tbody.appendChild(tr);
+    total+=item.price*item.quantity;
+  });
+  document.getElementById('cart-total').textContent=`Total: $${total.toFixed(2)} USDT`;
+}
+
+document.getElementById('paid-btn').addEventListener('click',()=>{
+  const tg=document.getElementById('telegram-username').value.trim();
+  if(!tg){ alert('Please enter your Telegram username.'); return; }
+  const order={ cart, telegram: tg, total: cart.reduce((s,i)=>s+i.price*i.quantity,0), timestamp: new Date().toISOString() };
+  localStorage.setItem('xein_last_order', JSON.stringify(order));
+  localStorage.removeItem('xein_cart'); // clear cart
+  window.location.href='receipt.html';
+});
+
+// -------- Recent purchase notifications --------
+const fakeUsernames = ["alice_tg", "bob1234", "charlie.x", "dora21", "eve_queen", "fay.tg", "george99", "hannah_x"];
+const products = [
+  { id:1, title:"Xein Pubg Key"}, { id:2, title:"Xein Delta Force Key"}
+];
+const recentNotifications = document.getElementById('recent-notifications');
+
+function showRandomNotification(){
+  const product=products[Math.floor(Math.random()*products.length)];
+  const user=fakeUsernames[Math.floor(Math.random()*fakeUsernames.length)];
+  const censored=user.length>4 ? user[0]+user[1]+"***"+user[user.length-1] : user[0]+"***";
+  const times = ["a few minutes ago","10 minutes ago","30 minutes ago","1 hour ago","2 hours ago"];
+  const time=times[Math.floor(Math.random()*times.length)];
+  const notif=document.createElement('div');
+  notif.className='notification';
+  notif.textContent=`${censored} just bought ${product.title} - ${time}`;
+  recentNotifications.appendChild(notif);
+  setTimeout(()=>{ if(notif.parentNode) notif.parentNode.remove(); }, 20000);
+}
+setInterval(showRandomNotification, Math.random()*5000+5000);
+
+document.addEventListener('DOMContentLoaded',()=>{
+  renderCart();
+});
+</script>
+</body>
+</html>
+
+<!-- receipt.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XeinStore - Receipt</title>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background:#f5f6fa; margin:0; padding:0; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+  .receipt-container { background:white; padding:2rem; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.1); max-width:600px; width:100%; }
+  h2 { text-align:center; margin-bottom:1rem; }
+  .receipt-row { display:flex; justify-content:space-between; margin:.5rem 0; }
+  .total { font-weight:800; font-size:1.2rem; margin-top:1rem; text-align:right; }
+  .note { background:#fff3cd; color:#856404; padding:.75rem; border-radius:6px; margin-top:1rem; }
+  .btn { display:block; margin:1rem auto 0; padding:.6rem 1rem; border-radius:8px; border:none; cursor:pointer; font-weight:700; text-decoration:none; color:white; background:#667eea; text-align:center; }
+  .recent-notifications { position: fixed; bottom: 20px; left: 20px; z-index:10000; display:flex; flex-direction: column; gap:.5rem; }
+  .notification { background: rgba(0,0,0,0.75); color:white; padding:.5rem 1rem; border-radius:8px; font-size:.9rem; animation: fadein 0.5s; }
+  @keyframes fadein { from {opacity:0; transform: translateX(-20px);} to {opacity:1; transform: translateX(0);} }
+</style>
+</head>
+<body>
+<div class="receipt-container" id="receipt-container">
+  <h2>XeinStore - Receipt</h2>
+  <div id="receipt-content"></div>
+  <div class="note">Payment is awaiting verification. Please contact <strong>@cocomelonqueen</strong> on Telegram for confirmation.</div>
+  <button class="btn" onclick="goToProducts()">Back to Store</button>
+</div>
+
+<div class="recent-notifications" id="recent-notifications"></div>
+
+<script>
+function goToProducts(){ window.location.href='index.html'; }
+
+const order = JSON.parse(localStorage.getItem('xein_last_order')||'{}');
+const receiptContent = document.getElementById('receipt-content');
+if(order.cart && order.cart.length){
+  order.cart.forEach(item=>{
+    const row=document.createElement('div');
+    row.className='receipt-row';
+    row.innerHTML=`<span>${item.title} (${item.durationLabel}) x${item.quantity}</span><span>$${(item.price*item.quantity).toFixed(2)}</span>`;
+    receiptContent.appendChild(row);
+  });
+  const totalDiv=document.createElement('div');
+  totalDiv.className='total';
+  totalDiv.textContent=`Total: $${order.total.toFixed(2)} USDT`;
+  receiptContent.appendChild(totalDiv);
+
+  const walletDiv=document.createElement('div');
+  walletDiv.className='receipt-row';
+  walletDiv.innerHTML=`<span>Wallet Address</span><span>TEwKbkNdXqvNUG951nYTCRF6UjLGBn7pqc</span>`;
+  receiptContent.appendChild(walletDiv);
+
+  const tgDiv=document.createElement('div');
+  tgDiv.className='receipt-row';
+  tgDiv.innerHTML=`<span>Telegram</span><span>${order.telegram}</span>`;
+  receiptContent.appendChild(tgDiv);
+}
+
+// -------- Recent purchase notifications --------
+const fakeUsernames = ["alice_tg", "bob1234", "charlie.x", "dora21", "eve_queen", "fay.tg", "george99", "hannah_x"];
+const products = [
+  { id:1, title:"Xein Pubg Key"}, { id:2, title:"Xein Delta Force Key"}
+];
+const recentNotifications = document.getElementById('recent-notifications');
+
+function showRandomNotification(){
+  const product=products[Math.floor(Math.random()*products.length)];
+  const user=fakeUsernames[Math.floor(Math.random()*fakeUsernames.length)];
+  const censored=user.length>4 ? user[0]+user[1]+"***"+user[user.length-1] : user[0]+"***";
+  const times = ["a few minutes ago","10 minutes ago","30 minutes ago","1 hour ago","2 hours ago"];
+  const time=times[Math.floor(Math.random()*times.length)];
+  const notif=document.createElement('div');
+  notif.className='notification';
+  notif.textContent=`${censored} just bought ${product.title} - ${time}`;
+  recentNotifications.appendChild(notif);
+  setTimeout(()=>{ if(notif.parentNode) notif.parentNode.remove(); }, 20000);
+}
+setInterval(showRandomNotification, Math.random()*5000+5000);
